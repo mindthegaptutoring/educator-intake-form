@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Educator Site Builder — Intake Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563EB;
+      --primary-dark: #1d4ed8;
+      --success: #16a34a;
+      --error: #dc2626;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --bg: #f9fafb;
+      --white: #ffffff;
+      --radius: 8px;
+    }
+    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--bg); line-height: 1.6; }
+
+    .header { background: var(--white); border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; }
+    .header-logo { font-weight: 700; font-size: 1.1rem; color: var(--primary); }
+    .header-sub { font-size: 0.85rem; color: var(--muted); }
+
+    /* PROGRESS */
+    .progress-bar { background: var(--white); border-bottom: 1px solid var(--border); padding: 1rem 2rem; }
+    .progress-steps { display: flex; max-width: 700px; margin: 0 auto; }
+    .progress-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; position: relative; }
+    .progress-step:not(:last-child)::after { content: ''; position: absolute; top: 13px; left: 50%; width: 100%; height: 2px; background: var(--border); z-index: 0; }
+    .progress-step.done:not(:last-child)::after,
+    .progress-step.active:not(:last-child)::after { background: var(--primary); }
+    .step-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--muted); position: relative; z-index: 1; }
+    .progress-step.active .step-dot { border-color: var(--primary); background: var(--primary); color: var(--white); }
+    .progress-step.done .step-dot { border-color: var(--primary); background: var(--primary); color: var(--white); }
+    .step-label { font-size: 0.7rem; color: var(--muted); }
+    .progress-step.active .step-label { color: var(--primary); font-weight: 600; }
+
+    /* FORM LAYOUT */
+    .form-wrap { max-width: 700px; margin: 2rem auto 4rem; padding: 0 1.5rem; }
+    .step-panel { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; display: none; }
+    .step-panel.active { display: block; }
+    .step-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .step-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.75rem; }
+
+    /* FIELDS */
+    .field { margin-bottom: 1.2rem; }
+    .field label { display: block; font-size: 0.84rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .req { color: var(--error); }
+    .opt { color: var(--muted); font-weight: 400; font-size: 0.76rem; }
+    .hint { font-size: 0.77rem; color: var(--muted); margin-top: 0.3rem; }
+    input[type=text], input[type=email], input[type=url], input[type=number], textarea, select {
+      width: 100%; padding: 0.65rem 0.9rem;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-family: 'Inter', sans-serif; font-size: 0.9rem; color: var(--text);
+      background: var(--white); transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); }
+    textarea { resize: vertical; min-height: 85px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* COLOR */
+    .color-wrap { display: flex; align-items: center; gap: 0.75rem; }
+    .color-wrap input[type=color] { width: 42px; height: 36px; padding: 2px; border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; flex-shrink: 0; }
+    .color-wrap input[type=text] { flex: 1; }
+
+    /* TOGGLE */
+    .toggle-row { display: flex; align-items: center; gap: 0.75rem; }
+    .toggle { position: relative; width: 42px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: var(--border); border-radius: 11px; cursor: pointer; transition: background 0.2s; }
+    .slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform 0.2s; }
+    .toggle input:checked + .slider { background: var(--primary); }
+    .toggle input:checked + .slider::before { transform: translateX(20px); }
+
+    /* DYNAMIC LISTS */
+    .item-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .item-row { display: flex; gap: 0.5rem; }
+    .item-row input { flex: 1; }
+    .btn-remove { background: none; border: 1.5px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; cursor: pointer; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+    .btn-remove:hover { border-color: var(--error); color: var(--error); }
+    .btn-add { background: none; border: 1.5px dashed var(--border); border-radius: 6px; padding: 0.5rem 1rem; cursor: pointer; color: var(--primary); font-size: 0.84rem; font-weight: 600; width: 100%; }
+    .btn-add:hover { background: #eff6ff; border-color: var(--primary); }
+
+    /* SERVICE / TESTIMONIAL BLOCKS */
+    .block { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 0.75rem; background: var(--bg); }
+    .block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.9rem; font-weight: 700; }
+
+    /* NAV */
+    .form-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+    .btn { display: inline-block; padding: 0.7rem 1.5rem; border-radius: var(--radius); font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: 2px solid transparent; }
+    .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: white; color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover { border-color: var(--text); }
+    .btn-success { background: var(--success); color: white; border-color: var(--success); font-size: 1rem; padding: 0.85rem 2rem; }
+
+    /* CONFIRMATION */
+    .confirm-box { text-align: center; padding: 2.5rem 1rem; }
+    .confirm-icon { width: 64px; height: 64px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 1.8rem; }
+
+    @media (max-width: 580px) {
+      .row2 { grid-template-columns: 1fr; }
+      .step-label { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">Educator Site Builder</div>
+  <div class="header-sub">Fill out the form below — we'll build your site and send you a preview link within 2 business days</div>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-steps">
+    <div class="progress-step active" id="prog-1"><div class="step-dot">1</div><span class="step-label">Your Business</span></div>
+    <div class="progress-step" id="prog-2"><div class="step-dot">2</div><span class="step-label">Services</span></div>
+    <div class="progress-step" id="prog-3"><div class="step-dot">3</div><span class="step-label">Testimonials</span></div>
+    <div class="progress-step" id="prog-4"><div class="step-dot">4</div><span class="step-label">Brand</span></div>
+    <div class="progress-step" id="prog-5"><div class="step-dot">5</div><span class="step-label">Submit</span></div>
+  </div>
+</div>
+
+<div class="form-wrap">
+
+  <!-- STEP 1 -->
+  <div class="step-panel active" id="step-1">
+    <h2 class="step-title">Tell us about your business</h2>
+    <p class="step-sub">This appears throughout your site — your name, what you do, and how people reach you.</p>
+
+    <div class="row2">
+      <div class="field">
+        <label>Business name <span class="req">*</span></label>
+        <input type="text" id="businessName" placeholder="e.g. Maple Tree Learning">
+      </div>
+      <div class="field">
+        <label>Your first name <span class="req">*</span></label>
+        <input type="text" id="ownerName" placeholder="e.g. Jamie">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>What kind of educator are you? <span class="req">*</span></label>
+      <select id="educatorType">
+        <option value="">Select one...</option>
+        <option value="tutor">Tutor</option>
+        <option value="coach">Academic coach / learning coach</option>
+        <option value="teacher">Independent class teacher</option>
+        <option value="creator">Curriculum creator / resource seller</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Who do you work with? <span class="req">*</span></label>
+      <input type="text" id="audience" placeholder="e.g. high school students and their families">
+    </div>
+
+    <div class="field">
+      <label>Region / location <span class="opt">(optional — leave blank if worldwide)</span></label>
+      <input type="text" id="region" placeholder="e.g. Toronto, ON">
+    </div>
+
+    <div class="field">
+      <label>Your bio <span class="req">*</span></label>
+      <textarea id="bio" placeholder="2–4 sentences about yourself, your experience, and your approach."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Contact email <span class="req">*</span></label>
+      <input type="email" id="contactEmail" placeholder="hello@yourbusiness.com">
+    </div>
+
+    <div class="field">
+      <label>Booking link <span class="opt">(optional)</span></label>
+      <input type="url" id="bookingLink" placeholder="https://cal.com/yourname">
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Years of experience <span class="opt">(optional)</span></label>
+        <input type="number" id="yearsExperience" placeholder="e.g. 6" min="1" max="50">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Subjects you teach <span class="opt">(optional)</span></label>
+      <div class="item-list" id="subjects-list"></div>
+      <button type="button" class="btn-add" id="btn-add-subject">+ Add a subject</button>
+    </div>
+
+    <div class="field">
+      <label>Main problems you solve <span class="opt">(add 2–4)</span></label>
+      <div class="item-list" id="problems-list"></div>
+      <button type="button" class="btn-add" id="btn-add-problem">+ Add a problem</button>
+    </div>
+
+    <div class="field">
+      <label>Common hesitations before booking <span class="opt">(add 2–3)</span></label>
+      <div class="item-list" id="hesitations-list"></div>
+      <button type="button" class="btn-add" id="btn-add-hesitation">+ Add a hesitation</button>
+    </div>
+
+    <div class="field">
+      <label>Trust bar items <span class="opt">(optional — short phrases like "No contracts")</span></label>
+      <div class="item-list" id="trustbar-list"></div>
+      <button type="button" class="btn-add" id="btn-add-trust">+ Add a trust item</button>
+    </div>
+
+    <div class="field">
+      <div class="toggle-row">
+        <label class="toggle"><input type="checkbox" id="hasBlog"><span class="slider"></span></label>
+        <span style="font-size:0.88rem; font-weight:500;">Include a blog section</span>
+      </div>
+    </div>
+
+    <div class="form-nav">
+      <span></span>
+      <button type="button" class="btn btn-primary" id="next-1">Next: Services →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-panel" id="step-2">
+    <h2 class="step-title">Your services</h2>
+    <p class="step-sub">Add the services you offer. Include at least one.</p>
+    <div id="services-container"></div>
+    <button type="button" class="btn-add" id="btn-add-service">+ Add another service</button>
+    <div class="form-nav">
+      <button type="button" class="btn btn-secondary" id="back-2">← Back</button>
+      <button type="button" class="btn btn-primary" id="next-2">Next: Testimonials →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-panel" id="step-3">
+    <h2 class="step-title">Testimonials</h2>
+    <p class="step-sub">Add reviews from students or parents. Aim for 3–6. You can skip this for now.</p>
+    <div id="testimonials-container"></div>
+    <button type="button" class="btn-add" id="btn-add-testimonial">+ Add a testimonial</button>
+    <div class="form-nav">
+      <button type="button" class="btn btn-secondary" id="back-3">← Back</button>
+      <button type="button" class="btn btn-primary" id="next-3">Next: Brand →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-panel" id="step-4">
+    <h2 class="step-title">Brand &amp; design</h2>
+    <p class="step-sub">Your colours and fonts.</p>
+
+    <div class="row2">
+      <div class="field">
+        <label>Primary colour</label>
+        <div class="color-wrap">
+          <input type="color" id="primaryColorPicker" value="#2563EB">
+          <input type="text" id="primaryColor" value="#2563EB">
+        </div>
+      </div>
+      <div class="field">
+        <label>Secondary colour</label>
+        <div class="color-wrap">
+          <input type="color" id="secondaryColorPicker" value="#3B82F6">
+          <input type="text" id="secondaryColor" value="#3B82F6">
+        </div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Heading font</label>
+        <select id="fontHeading">
+          <option value="Poppins">Poppins (clean, modern)</option>
+          <option value="Playfair Display">Playfair Display (elegant)</option>
+          <option value="Montserrat">Montserrat (bold)</option>
+          <option value="Nunito">Nunito (friendly)</option>
+          <option value="Raleway">Raleway (refined)</option>
+          <option value="Bebas Neue">Bebas Neue (strong)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Body font</label>
+        <select id="fontBody">
+          <option value="Inter">Inter (neutral)</option>
+          <option value="Nunito">Nunito (friendly)</option>
+          <option value="Lato">Lato (warm)</option>
+          <option value="Source Sans 3">Source Sans 3</option>
+          <option value="DM Sans">DM Sans (modern)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Logo URL <span class="opt">(optional — leave blank to show business name as text)</span></label>
+      <input type="url" id="logoUrl" placeholder="https://yourdomain.com/logo.png">
+    </div>
+
+    <div class="form-nav">
+      <button type="button" class="btn btn-secondary" id="back-4">← Back</button>
+      <button type="button" class="btn btn-primary" id="next-4">Next: Submit →</button>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-panel" id="step-5">
+    <div id="submit-view">
+      <h2 class="step-title">Ready to submit?</h2>
+      <p class="step-sub">Review your information using the Back button if needed, then click Submit. We'll build your site and send you a preview link within 2 business days.</p>
+
+      <div style="background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:1.5rem;">
+        <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;">
+          <strong style="color:var(--text);">What happens next:</strong><br>
+          Once you submit, your information goes to our team. We'll build your site and send you a preview link. If we have any questions we'll reach out by email.
+        </p>
+      </div>
+
+      <div class="form-nav">
+        <button type="button" class="btn btn-secondary" id="back-5">← Back</button>
+        <button type="button" class="btn btn-success" id="btn-submit">Submit my information →</button>
+      </div>
+    </div>
+
+    <div id="confirm-view" style="display:none;">
+      <div class="confirm-box">
+        <div class="confirm-icon">✓</div>
+        <h2 style="margin-bottom:0.5rem;">Thanks — we've got it!</h2>
+        <p style="color:var(--muted); font-size:0.95rem; max-width:460px; margin:0 auto 1.5rem; line-height:1.7;">
+          Your information has been submitted. We'll build your site and send you a preview link within 2 business days.
+        </p>
+        <p style="font-size:0.85rem; color:var(--muted);">
+          Questions? Email <a href="mailto:kristen@everyavenue.com" style="color:var(--primary); font-weight:600;">kristen@everyavenue.com</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──
+let serviceCount = 0;
+let testimonialCount = 0;
+
+// ── Step navigation ──
+function goTo(n) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('step-' + n).classList.add('active');
+  document.querySelectorAll('.progress-step').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    if (i + 1 < n) el.classList.add('done');
+    if (i + 1 === n) el.classList.add('active');
+  });
+  window.scrollTo(0, 0);
+}
+
+// ── Validation ──
+function validateStep1() {
+  var errors = [];
+  if (!v('businessName'))  errors.push('Business name');
+  if (!v('ownerName'))     errors.push('Your first name');
+  if (!v('educatorType'))  errors.push('Educator type');
+  if (!v('audience'))      errors.push('Who you work with');
+  if (!v('bio'))           errors.push('Your bio');
+  if (!vEmail('contactEmail')) errors.push('Contact email (must be a valid email)');
+  if (errors.length) { alert('Please fill in: ' + errors.join(', ')); return false; }
+  return true;
+}
+
+function validateStep2() {
+  if (serviceCount === 0) { alert('Please add at least one service.'); return false; }
+  var ok = true;
+  document.querySelectorAll('.svc-name').forEach(function(inp) {
+    if (!inp.value.trim()) { inp.style.borderColor = '#dc2626'; ok = false; }
+    else inp.style.borderColor = '';
+  });
+  if (!ok) { alert('Please enter a name for each service.'); return false; }
+  return true;
+}
+
+function v(id) { var el = document.getElementById(id); return el && el.value.trim(); }
+function vEmail(id) { var el = document.getElementById(id); return el && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim()); }
+
+// ── Dynamic list items ──
+function addItem(listId, placeholder) {
+  var list = document.getElementById(listId);
+  var row = document.createElement('div');
+  row.className = 'item-row';
+  row.innerHTML = '<input type="text" placeholder="' + placeholder + '"><button type="button" class="btn-remove">Remove</button>';
+  list.appendChild(row);
+  row.querySelector('button').addEventListener('click', function() { row.remove(); });
+  row.querySelector('input').focus();
+}
+
+function getList(listId) {
+  var inputs = document.querySelectorAll('#' + listId + ' input');
+  var vals = [];
+  inputs.forEach(function(inp) { if (inp.value.trim()) vals.push(inp.value.trim()); });
+  return vals;
+}
+
+// ── Services ──
+function addService() {
+  if (serviceCount >= 6) { alert('Maximum 6 services.'); return; }
+  serviceCount++;
+  var id = serviceCount;
+  var c = document.getElementById('services-container');
+  var d = document.createElement('div');
+  d.className = 'block';
+  d.id = 'svc-' + id;
+  d.innerHTML = '<div class="block-header"><span>Service ' + id + '</span>'
+    + '<button type="button" class="btn-remove" data-svc="' + id + '">Remove</button></div>'
+    + '<div class="field"><label>Service name <span class="req">*</span></label>'
+    + '<input type="text" class="svc-name" placeholder="e.g. 1-on-1 Tutoring"></div>'
+    + '<div class="row2">'
+    + '<div class="field"><label>Audience / grade range</label><input type="text" class="svc-audience" placeholder="e.g. Grades 9–12"></div>'
+    + '<div class="field"><label>Price</label><input type="text" class="svc-price" placeholder="e.g. $55 / hour"></div>'
+    + '</div>'
+    + '<div class="field"><label>Description</label><textarea class="svc-desc" rows="2" placeholder="A sentence or two about this service."></textarea></div>'
+    + '<div class="field"><label>Bullet points <span class="opt">(one per line)</span></label>'
+    + '<textarea class="svc-bullets" rows="3" placeholder="Weekly sessions tailored to your student\nAny program or curriculum welcome"></textarea></div>'
+    + '<div class="row2">'
+    + '<div class="field"><label>Button label</label><input type="text" class="svc-cta-label" value="Book Now"></div>'
+    + '<div class="field"><label>Button link</label><input type="url" class="svc-cta-link" placeholder="https://cal.com/..."></div>'
+    + '</div>'
+    + '<div class="field"><div class="toggle-row"><label class="toggle"><input type="checkbox" class="svc-featured"><span class="slider"></span></label>'
+    + '<span style="font-size:0.85rem;">Mark as featured / most popular</span></div></div>';
+  c.appendChild(d);
+  d.querySelector('.btn-remove').addEventListener('click', function() { d.remove(); });
+}
+
+// ── Testimonials ──
+function addTestimonial() {
+  testimonialCount++;
+  var id = testimonialCount;
+  var c = document.getElementById('testimonials-container');
+  var d = document.createElement('div');
+  d.className = 'block';
+  d.id = 'tst-' + id;
+  d.innerHTML = '<div class="block-header"><span>Testimonial ' + id + '</span>'
+    + '<button type="button" class="btn-remove">Remove</button></div>'
+    + '<div class="field"><label>Quote</label>'
+    + '<textarea class="tst-quote" rows="3" placeholder="What did they say?"></textarea></div>'
+    + '<div class="row2">'
+    + '<div class="field"><label>Name</label><input type="text" class="tst-name" placeholder="e.g. Lisa T."></div>'
+    + '<div class="field"><label>Role</label><input type="text" class="tst-role" placeholder="e.g. Parent"></div>'
+    + '</div>'
+    + '<div class="field"><label>Subject / context <span class="opt">(optional)</span></label>'
+    + '<input type="text" class="tst-subject" placeholder="e.g. Chemistry, Grade 11"></div>';
+  c.appendChild(d);
+  d.querySelector('.btn-remove').addEventListener('click', function() { d.remove(); });
+}
+
+// ── Build JSON ──
+function buildIntake() {
+  var services = [];
+  document.querySelectorAll('.block[id^="svc-"]').forEach(function(b) {
+    var bullets = (b.querySelector('.svc-bullets').value || '').split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    services.push({
+      name:        b.querySelector('.svc-name').value.trim(),
+      audience:    b.querySelector('.svc-audience').value.trim() || null,
+      price:       b.querySelector('.svc-price').value.trim() || null,
+      description: b.querySelector('.svc-desc').value.trim() || null,
+      bullets:     bullets,
+      ctaLabel:    b.querySelector('.svc-cta-label').value.trim() || 'Book Now',
+      ctaLink:     b.querySelector('.svc-cta-link').value.trim() || '/contact',
+      featured:    b.querySelector('.svc-featured').checked
+    });
+  });
+
+  var testimonials = [];
+  document.querySelectorAll('.block[id^="tst-"]').forEach(function(b) {
+    var quote = b.querySelector('.tst-quote').value.trim();
+    if (quote) testimonials.push({
+      quote:   quote,
+      name:    b.querySelector('.tst-name').value.trim(),
+      role:    b.querySelector('.tst-role').value.trim() || null,
+      subject: b.querySelector('.tst-subject').value.trim() || null
+    });
+  });
+
+  return {
+    businessName:    document.getElementById('businessName').value.trim(),
+    ownerName:       document.getElementById('ownerName').value.trim(),
+    educatorType:    document.getElementById('educatorType').value,
+    audience:        document.getElementById('audience').value.trim(),
+    region:          document.getElementById('region').value.trim() || null,
+    bio:             document.getElementById('bio').value.trim(),
+    contactEmail:    document.getElementById('contactEmail').value.trim(),
+    bookingLink:     document.getElementById('bookingLink').value.trim() || null,
+    yearsExperience: parseInt(document.getElementById('yearsExperience').value) || null,
+    hasBlog:         document.getElementById('hasBlog').checked,
+    subjects:        getList('subjects-list'),
+    mainProblems:    getList('problems-list'),
+    hesitations:     getList('hesitations-list'),
+    trustBar:        getList('trustbar-list'),
+    services:        services,
+    testimonials:    testimonials,
+    blogPosts:       [],
+    brand: {
+      primaryColor:   document.getElementById('primaryColor').value,
+      secondaryColor: document.getElementById('secondaryColor').value,
+      fontHeading:    document.getElementById('fontHeading').value,
+      fontBody:       document.getElementById('fontBody').value,
+      logoUrl:        document.getElementById('logoUrl').value.trim() || null
+    }
+  };
+}
+
+// ── Submit ──
+async function submitIntake() {
+  var btn = document.getElementById('btn-submit');
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
+
+  var intake = buildIntake();
+
+  try {
+    await fetch('https://hook.us2.make.com/4brsav4tsvp0a8pnbl155kque28n1bdc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(intake)
+    });
+  } catch(e) {
+    console.log('submitted');
+  }
+
+  document.getElementById('submit-view').style.display = 'none';
+  document.getElementById('confirm-view').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+// ── Wire up all buttons using addEventListener (no onclick attributes) ──
+document.addEventListener('DOMContentLoaded', function() {
+
+  // Color pickers sync
+  document.getElementById('primaryColorPicker').addEventListener('input', function() { document.getElementById('primaryColor').value = this.value; });
+  document.getElementById('primaryColor').addEventListener('input', function() { document.getElementById('primaryColorPicker').value = this.value; });
+  document.getElementById('secondaryColorPicker').addEventListener('input', function() { document.getElementById('secondaryColor').value = this.value; });
+  document.getElementById('secondaryColor').addEventListener('input', function() { document.getElementById('secondaryColorPicker').value = this.value; });
+
+  // Dynamic list buttons
+  document.getElementById('btn-add-subject').addEventListener('click',    function() { addItem('subjects-list',   'e.g. Algebra'); });
+  document.getElementById('btn-add-problem').addEventListener('click',    function() { addItem('problems-list',   'e.g. Falling behind in school'); });
+  document.getElementById('btn-add-hesitation').addEventListener('click', function() { addItem('hesitations-list','e.g. Not sure online tutoring will work'); });
+  document.getElementById('btn-add-trust').addEventListener('click',      function() { addItem('trustbar-list',   'e.g. No contracts'); });
+  document.getElementById('btn-add-service').addEventListener('click',    addService);
+  document.getElementById('btn-add-testimonial').addEventListener('click', addTestimonial);
+
+  // Step navigation
+  document.getElementById('next-1').addEventListener('click', function() { if (validateStep1()) goTo(2); });
+  document.getElementById('back-2').addEventListener('click', function() { goTo(1); });
+  document.getElementById('next-2').addEventListener('click', function() { if (validateStep2()) goTo(3); });
+  document.getElementById('back-3').addEventListener('click', function() { goTo(2); });
+  document.getElementById('next-3').addEventListener('click', function() { goTo(4); });
+  document.getElementById('back-4').addEventListener('click', function() { goTo(3); });
+  document.getElementById('next-4').addEventListener('click', function() { goTo(5); });
+  document.getElementById('back-5').addEventListener('click', function() { goTo(4); });
+  document.getElementById('btn-submit').addEventListener('click', submitIntake);
+
+  // Init with one service and one testimonial
+  addService();
+  addTestimonial();
+});
+</script>
+
+</body>
+</html>
